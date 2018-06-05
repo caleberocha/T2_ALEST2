@@ -16,11 +16,15 @@ public class DirectedEdgeWeightedGraph {
 		private String name;
 		private int cost;
 		private int mark;
+		private BigInteger totalCost;
+		private boolean needToCalculateTotalCost;
 		
 		public Vertex(String name, int cost) {
 			this.name = name;
 			this.cost = cost;
 			this.mark = 0;
+			this.totalCost = BigInteger.ZERO;
+			this.needToCalculateTotalCost = true;
 		}
 		
 		@Override
@@ -75,16 +79,16 @@ public class DirectedEdgeWeightedGraph {
 			throw new IllegalArgumentException("Ciclo detectado!");
 	}
 	
-	public void addNode(String name, int cost) {
-		addNode(new Vertex(name, cost));
+	public void addVertex(String name, int cost) {
+		addVertex(new Vertex(name, cost));
 	}
 	
-	public void addNode(Vertex element) {
+	public void addVertex(Vertex element) {
 		vertices.add(element);
 		firstVertex.add(vertices.indexOf(element));
 	}
 	
-	public List<Vertex> getNodes() {
+	public List<Vertex> getVertices() {
 		return vertices;
 	}
 	
@@ -97,16 +101,27 @@ public class DirectedEdgeWeightedGraph {
 	}
 	
 	private BigInteger getTotalCost(int index) {
-		System.out.print(index);
-		if(adjList.get(index).isEmpty())
-			System.out.println();
-		
-		BigInteger partialSum = BigInteger.valueOf(vertices.get(index).cost);
-		for(Edge e : adjList.get(index)) {
-			System.out.print(" \u2192 " );
-			BigInteger weight = BigInteger.valueOf(e.weight);
-			weight = weight.multiply(getTotalCost(e.vertex2));
-			partialSum = partialSum.add(weight);
+		Vertex v = vertices.get(index);
+		BigInteger partialSum = BigInteger.ZERO;
+		//System.out.print(index);
+		//if(adjList.get(index).isEmpty())
+		//	System.out.println();
+
+		//System.out.print("(" + v.totalCost + ":" + v.needToCalculateTotalCost + ")");
+		if(v.needToCalculateTotalCost) {
+			partialSum = BigInteger.valueOf(v.cost);
+			for (Edge e : adjList.get(index)) {
+				//System.out.print(" \u2192 ");
+				BigInteger weight = BigInteger.valueOf(e.weight);
+				weight = weight.multiply(getTotalCost(e.vertex2));
+				partialSum = partialSum.add(weight);
+			}
+			if(partialSum.equals(v.totalCost))
+				v.needToCalculateTotalCost = false;
+			else
+				v.totalCost = partialSum;
+		} else {
+			partialSum = v.totalCost;
 		}
 		return partialSum;
 	}
@@ -127,7 +142,7 @@ public class DirectedEdgeWeightedGraph {
 	
 	public BigInteger getTotalCost() {
 		if(firstVertex.size() > 1)
-			throw new IllegalArgumentException("Há mais de um vértice inicial");
+			throw new IllegalArgumentException("Há mais de um vértice inicial!");
 		
 		return getTotalCost(firstVertex.get(0));
 	}
@@ -147,9 +162,7 @@ public class DirectedEdgeWeightedGraph {
 		v.mark = 1;		
 		for(Edge e : adjList.get(vertices.indexOf(v))) {
 			Vertex u = vertices.get(e.vertex2);
-			if(u.mark == 1)
-				return true;
-			else if(u.mark == 0 && visit(u))
+			if(u.mark == 1 || u.mark == 0 && visit(u))
 				return true;
 		}
 		v.mark = 2;
