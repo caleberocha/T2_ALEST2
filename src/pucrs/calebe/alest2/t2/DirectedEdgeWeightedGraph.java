@@ -17,14 +17,12 @@ public class DirectedEdgeWeightedGraph {
 		private int cost;
 		private int mark;
 		private BigInteger totalCost;
-		private boolean needToCalculateTotalCost;
 		
 		public Vertex(String name, int cost) {
 			this.name = name;
 			this.cost = cost;
 			this.mark = 0;
 			this.totalCost = BigInteger.ZERO;
-			this.needToCalculateTotalCost = true;
 		}
 		
 		@Override
@@ -74,9 +72,6 @@ public class DirectedEdgeWeightedGraph {
 		Edge e = new Edge(n1, n2, weight);
 		adjList.get(n1).add(e);
 		firstVertex.remove((Integer) n2);
-		
-		if(containsCycle())
-			throw new IllegalArgumentException("Ciclo detectado!");
 	}
 	
 	public void addVertex(String name, int cost) {
@@ -102,28 +97,17 @@ public class DirectedEdgeWeightedGraph {
 	
 	private BigInteger getTotalCost(int index) {
 		Vertex v = vertices.get(index);
-		BigInteger partialSum = BigInteger.ZERO;
-		//System.out.print(index);
-		//if(adjList.get(index).isEmpty())
-		//	System.out.println();
-
-		//System.out.print("(" + v.totalCost + ":" + v.needToCalculateTotalCost + ")");
-		if(v.needToCalculateTotalCost) {
-			partialSum = BigInteger.valueOf(v.cost);
+		if(v.totalCost.equals(BigInteger.ZERO)) {
+			BigInteger partialSum = BigInteger.valueOf(v.cost);
 			for (Edge e : adjList.get(index)) {
-				//System.out.print(" \u2192 ");
 				BigInteger weight = BigInteger.valueOf(e.weight);
 				weight = weight.multiply(getTotalCost(e.vertex2));
 				partialSum = partialSum.add(weight);
 			}
-			if(partialSum.equals(v.totalCost))
-				v.needToCalculateTotalCost = false;
-			else
-				v.totalCost = partialSum;
-		} else {
-			partialSum = v.totalCost;
+			v.totalCost = partialSum;
+			return partialSum;
 		}
-		return partialSum;
+		return v.totalCost;
 	}
 	
 	public BigInteger getTotalCost(Vertex elem) {
@@ -147,7 +131,7 @@ public class DirectedEdgeWeightedGraph {
 		return getTotalCost(firstVertex.get(0));
 	}
 	
-	private boolean containsCycle() {
+	public boolean containsCycle() {
 		for(Vertex v : vertices)
 			v.mark = 0;
 		

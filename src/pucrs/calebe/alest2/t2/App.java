@@ -52,9 +52,11 @@ public class App {
 					}
 				}
 			}
+			if(graph.containsCycle())
+				throw new IllegalArgumentException("Ciclo detectado!");
 
-			long endTime = System.nanoTime();
 			System.out.println("Custo total: " + graph.getTotalCost());
+			long endTime = System.nanoTime();
 			System.out.println("Tempo:       " + formatElapsedTime(endTime - startTime));
 		} catch (IllegalArgumentException e) {
 			System.err.println(e.getMessage());
