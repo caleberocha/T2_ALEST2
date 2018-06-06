@@ -133,6 +133,7 @@ public class DirectedEdgeWeightedGraph {
 	 */
 	private BigInteger getTotalCost(Vertex v) {
 		opCalculateCostCount++;
+		// Caso o custo ja tenha sido calculado, apenas le do atributo totalCost, desta forma evitando recalculos desnecessarios
 		if(v.totalCost.equals(BigInteger.ZERO)) {
 			BigInteger partialSum = BigInteger.valueOf(v.cost);
 			if(adjList.containsKey(v)) {
