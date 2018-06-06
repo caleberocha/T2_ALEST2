@@ -30,13 +30,17 @@ public class App {
 		try(BufferedReader file = Files.newBufferedReader(path)) {
 			DirectedEdgeWeightedGraph graph = null;
 			String line;
-			boolean firstLine = false;
+			boolean firstLine = true;
+			int verticesCount = 0;
+			int edgesCount = 0;
 			while ((line = file.readLine()) != null) {
 				if (line.matches("[0-9]+")) {
-					int n = Integer.parseInt(line);
-					if (!firstLine) {
-						firstLine = true;
-						graph = new DirectedEdgeWeightedGraph(n);
+					if (firstLine) {
+						firstLine = false;
+						verticesCount = Integer.parseInt(line);
+						graph = new DirectedEdgeWeightedGraph(verticesCount);
+					} else {
+						edgesCount = Integer.parseInt(line);
 					}
 				} else {
 					Pattern patternNode = Pattern.compile("^([A-Z]+) ([0-9]+)");
@@ -55,13 +59,15 @@ public class App {
 			if(graph.containsCycle())
 				throw new IllegalArgumentException("Ciclo detectado!");
 
+			System.out.println("Vértices:    " + verticesCount);
+			System.out.println("Arestas:     " + edgesCount);
 			System.out.println("Custo total: " + graph.getTotalCost());
 			long endTime = System.nanoTime();
 			System.out.println("Tempo:       " + formatElapsedTime(endTime - startTime));
 			System.out.println("Numero de operações");
 			int[] op = graph.getOpCount();
-			System.out.println("AddVertex:   " + op[0]);
-			System.out.println("AddEdge:     " + op[1]);
+			System.out.println("Vertex:      " + op[0]);
+			System.out.println("Edge:        " + op[1]);
 			System.out.println("totalCost:   " + op[2]);
 			
 			//System.out.println(graph.toGraphViz());
