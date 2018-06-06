@@ -1,5 +1,6 @@
 # T2_ALEST2
 Trabalho 2 - ALEST2 2018/1
+
 Para compilar e executar os casos de teste, execute o script run.sh (Linux) ou run.bat (Windows). É necessário ter o Oracle JDK instalado.
 
 Enunciado:
