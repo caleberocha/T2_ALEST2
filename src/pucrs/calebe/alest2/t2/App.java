@@ -63,11 +63,12 @@ public class App {
 			System.out.println("AddVertex:   " + op[0]);
 			System.out.println("AddEdge:     " + op[1]);
 			System.out.println("totalCost:   " + op[2]);
-		} catch (IllegalArgumentException e) {
+			
+			//System.out.println(graph.toGraphViz());
+		} catch (IllegalArgumentException | IOException e) {
 			System.err.println(e.getMessage());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			long endTime = System.nanoTime();
+			System.out.println("Tempo:       " + formatElapsedTime(endTime - startTime));
 		}
 	}
 

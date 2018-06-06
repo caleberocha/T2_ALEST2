@@ -187,8 +187,8 @@ public class DirectedEdgeWeightedGraph {
 	}
 
 	/**
-	 * Adicinoa um novo vertice.
-	 * @param element Vertice
+	 * Adiciona um novo vértice.
+	 * @param element Vértice
 	 */
 	private void addVertex(Vertex element) {
 		vertices.put(element.name, element);
@@ -214,7 +214,6 @@ public class DirectedEdgeWeightedGraph {
 				}
 			}
 			v.totalCost = partialSum;
-			return partialSum;
 		}
 		return v.totalCost;
 	}
@@ -299,7 +298,9 @@ public class DirectedEdgeWeightedGraph {
 				.append(v)
 				.append("\" -> \"")
 				.append(e.vertex2)
-				.append("\"")
+				.append("\"[label=")
+				.append(e.weight)
+				.append("]")
 				.append(System.lineSeparator());
 			}
 		}
