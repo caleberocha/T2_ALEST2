@@ -176,7 +176,7 @@ public class DirectedEdgeWeightedGraph {
 	}
 
 	/**
-	 * Visita um grafo. Utilizado pelo metodo containsCycle().
+	 * Visita um vertice. Utilizado pelo metodo containsCycle().
 	 * @param v Vertice
 	 * @return
 	 */
