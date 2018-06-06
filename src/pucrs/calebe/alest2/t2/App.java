@@ -24,7 +24,7 @@ public class App {
 		calculate(path);
 	}
 
-	public static void calculate(Path path) {
+	private static void calculate(Path path) {
 		System.out.println("Arquivo:     " + path.getFileName().toString());
 		long startTime = System.nanoTime();
 		try(BufferedReader file = Files.newBufferedReader(path)) {
@@ -58,6 +58,11 @@ public class App {
 			System.out.println("Custo total: " + graph.getTotalCost());
 			long endTime = System.nanoTime();
 			System.out.println("Tempo:       " + formatElapsedTime(endTime - startTime));
+			System.out.println("Numero de operaçoes");
+			int[] op = graph.getOpCount();
+			System.out.println("AddVertex:   " + op[0]);
+			System.out.println("AddEdge:     " + op[1]);
+			System.out.println("totalCost:   " + op[2]);
 		} catch (IllegalArgumentException e) {
 			System.err.println(e.getMessage());
 		} catch (IOException e) {
@@ -66,7 +71,7 @@ public class App {
 		}
 	}
 
-	public static String formatElapsedTime(long nanoSeconds) {
+	private static String formatElapsedTime(long nanoSeconds) {
 		long divisor = 1000000000;
 		long h = nanoSeconds / divisor / 3600 % 24;
 		long m = nanoSeconds / divisor / 60 % 60;

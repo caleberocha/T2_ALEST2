@@ -1,10 +1,7 @@
 package pucrs.calebe.alest2.t2;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 /**
  * Grafo direcionado com pesos nas arestas.
@@ -18,7 +15,7 @@ public class DirectedEdgeWeightedGraph {
 		private int mark;
 		private BigInteger totalCost;
 		
-		public Vertex(String name, int cost) {
+		Vertex(String name, int cost) {
 			this.name = name;
 			this.cost = cost;
 			this.mark = 0;
@@ -32,11 +29,11 @@ public class DirectedEdgeWeightedGraph {
 	}
 	
 	private class Edge {
-		private int vertex1;
-		private int vertex2;
+		private Vertex vertex1;
+		private Vertex vertex2;
 		private int weight;
 		
-		public Edge(int vertex1, int vertex2, int weight) {
+		Edge(Vertex vertex1, Vertex vertex2, int weight) {
 			this.vertex1 = vertex1;
 			this.vertex2 = vertex2;
 			this.weight = weight;
@@ -44,34 +41,46 @@ public class DirectedEdgeWeightedGraph {
 		
 		@Override
 		public String toString() {
-			return String.format("[%d \u2192 %d: %d]", this.vertex1, this.vertex2, this.weight);
+			return String.format("[%s \u2192 %s: %d]", this.vertex1, this.vertex2, this.weight);
 		}
 	}
 	
-	private List<Vertex> vertices;
-	private List<LinkedList<Edge>> adjList;
-	private List<Integer> firstVertex;
-	
+	private Map<String, Vertex> vertices;
+	private Map<Vertex, LinkedList<Edge>> adjList;
+	private Map<String, Vertex> firstVertex;
+	private int opAddVertexCount;
+	private int opAddEdgeCount;
+	private int opCalculateCostCount;
+
 	public DirectedEdgeWeightedGraph(int size) {
-		vertices = new ArrayList<>(size);
-		adjList = new ArrayList<>(size);
-		firstVertex = new ArrayList<>(size);
-		for(int i = 0; i < size; i++)
-			adjList.add(new LinkedList<>());
+		vertices = new HashMap<>();
+		adjList = new HashMap<>();
+		firstVertex = new HashMap<>();
+
+		opAddEdgeCount = 0;
+		opAddVertexCount = 0;
+		opCalculateCostCount = 0;
 	}
 	
 	public void addEdge(String name1, String name2, int weight) {
-		int n1 = vertexIndexOf(name1);
-		if(n1 == -1)
+		Vertex v1 = vertices.get(name1);
+		if(v1 == null)
 			throw new NoSuchElementException("Projeto " + name1 + " não encontrado.");
 		
-		int n2 = vertexIndexOf(name2);
-		if(n2 == -1)
+		Vertex v2 = vertices.get(name2);
+		if(v2 == null)
 			throw new NoSuchElementException("Projeto " + name2 + " não encontrado.");
 		
-		Edge e = new Edge(n1, n2, weight);
-		adjList.get(n1).add(e);
-		firstVertex.remove((Integer) n2);
+		addEdge(v1, v2, weight);
+	}
+
+	private void addEdge(Vertex v1, Vertex v2, int weight) {
+		Edge e = new Edge(v1, v2, weight);
+		adjList.putIfAbsent(v1, new LinkedList<>());
+		adjList.get(v1).add(e);
+		firstVertex.remove(v2.name);
+
+		opAddEdgeCount += 2;
 	}
 	
 	public void addVertex(String name, int cost) {
@@ -79,30 +88,21 @@ public class DirectedEdgeWeightedGraph {
 	}
 	
 	public void addVertex(Vertex element) {
-		vertices.add(element);
-		firstVertex.add(vertices.indexOf(element));
+		vertices.put(element.name, element);
+		firstVertex.put(element.name, element);
+		opAddVertexCount += 2;
 	}
 	
-	public List<Vertex> getVertices() {
-		return vertices;
-	}
-	
-	private int vertexIndexOf(String name) {
-		for(int i = 0; i < vertices.size(); i++) {
-			if(vertices.get(i).name.equals(name))
-				return i;
-		}
-		return -1;
-	}
-	
-	private BigInteger getTotalCost(int index) {
-		Vertex v = vertices.get(index);
+	private BigInteger getTotalCost(Vertex v) {
+		opCalculateCostCount++;
 		if(v.totalCost.equals(BigInteger.ZERO)) {
 			BigInteger partialSum = BigInteger.valueOf(v.cost);
-			for (Edge e : adjList.get(index)) {
-				BigInteger weight = BigInteger.valueOf(e.weight);
-				weight = weight.multiply(getTotalCost(e.vertex2));
-				partialSum = partialSum.add(weight);
+			if(adjList.containsKey(v)) {
+				for (Edge e : adjList.get(v)) {
+					BigInteger weight = BigInteger.valueOf(e.weight);
+					weight = weight.multiply(getTotalCost(e.vertex2));
+					partialSum = partialSum.add(weight);
+				}
 			}
 			v.totalCost = partialSum;
 			return partialSum;
@@ -110,32 +110,18 @@ public class DirectedEdgeWeightedGraph {
 		return v.totalCost;
 	}
 	
-	public BigInteger getTotalCost(Vertex elem) {
-		int index = vertices.indexOf(elem);
-		if(index == -1)
-			return BigInteger.ZERO;
-		return getTotalCost(index);	
-	}
-	
-	public BigInteger getTotalCost(String elem) {
-		int index = vertexIndexOf(elem);
-		if(index == -1)
-			return BigInteger.ZERO;
-		return getTotalCost(index);	
-	}
-	
 	public BigInteger getTotalCost() {
 		if(firstVertex.size() > 1)
 			throw new IllegalArgumentException("Há mais de um vértice inicial!");
 		
-		return getTotalCost(firstVertex.get(0));
+		return getTotalCost((Vertex) firstVertex.values().toArray()[0]);
 	}
 	
 	public boolean containsCycle() {
-		for(Vertex v : vertices)
+		for(Vertex v : vertices.values())
 			v.mark = 0;
 		
-		for(Vertex v : vertices)
+		for(Vertex v : vertices.values())
 			if(v.mark == 0 && visit(v))
 				return true;
 		
@@ -143,39 +129,43 @@ public class DirectedEdgeWeightedGraph {
 	}
 	
 	private boolean visit(Vertex v) {
-		v.mark = 1;		
-		for(Edge e : adjList.get(vertices.indexOf(v))) {
-			Vertex u = vertices.get(e.vertex2);
-			if(u.mark == 1 || u.mark == 0 && visit(u))
-				return true;
-		}
+		v.mark = 1;
+		if(adjList.containsKey(v))
+			for (Edge e : adjList.get(v))
+				if (e.vertex2.mark == 1 || e.vertex2.mark == 0 && visit(e.vertex2))
+					return true;
 		v.mark = 2;
 		return false;
 	}
-	
+
+	public int[] getOpCount() {
+		return new int[] {opAddVertexCount, opAddEdgeCount, opCalculateCostCount};
+	}
+
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("First: " + firstVertex).append(System.lineSeparator());
-		for(int i = 0; i < adjList.size(); i++) {
-			sb.append(i).append(" = ").append(vertices.get(i)).append(": ");
-			for(Edge e : adjList.get(i))
-				sb.append("[").append(vertices.get(e.vertex2)).append("]").append("=").append(e.weight).append(", ");
-				//sb.append(e).append(", ");
+		sb.append("First: ").append(firstVertex.values()).append(System.lineSeparator());
+		for(Vertex v : adjList.keySet()) {
+			sb.append(v).append(": ");
+			for(Edge e : adjList.get(v)) {
+				sb.append("[").append(e.vertex2).append("], ");
+			}
 			sb.append(System.lineSeparator());
 		}
+
 		return sb.toString();
 	}
 	
 	public String toGraphViz() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("digraph G {").append(System.lineSeparator());
-		for(int i = 0; i < adjList.size(); i++) {
-			for(Edge e : adjList.get(i)) {
+		for(Vertex v : adjList.keySet()) {
+			for(Edge e : adjList.get(v)) {
 				sb.append("    \"")
-				.append(vertices.get(i)).append("\"")
+				.append(v).append("\"")
 				.append(" -> \"")
-				.append(vertices.get(e.vertex2)).append("\"")
+				.append(e.vertex2).append("\"")
 				.append(System.lineSeparator());
 			}
 		}
