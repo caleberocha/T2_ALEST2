@@ -1,7 +1,8 @@
 package pucrs.calebe.alest2.t2;
 
 import java.math.BigInteger;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.NoSuchElementException;
 
 /**
  * Grafo direcionado com pesos nas arestas.
@@ -11,7 +12,7 @@ public class DirectedEdgeWeightedGraph {
 
 	/**
 	 * Vertice do grafo.
-	 * Composto por nome, custo, marcaçao de visitado (para detecçao de ciclo) e custo total
+	 * Composto por nome, custo, marcação de visitado (para detecção de ciclo) e custo total
 	 */
 	private class Vertex {
 		private String name;
@@ -29,6 +30,41 @@ public class DirectedEdgeWeightedGraph {
 		@Override
 		public String toString() {
 			return name + " " + cost;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + getOuterType().hashCode();
+			result = prime * result + cost;
+			result = prime * result + ((name == null) ? 0 : name.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			Vertex other = (Vertex) obj;
+			if (!getOuterType().equals(other.getOuterType()))
+				return false;
+			if (cost != other.cost)
+				return false;
+			if (name == null) {
+				if (other.name != null)
+					return false;
+			} else if (!name.equals(other.name))
+				return false;
+			return true;
+		}
+
+		private DirectedEdgeWeightedGraph getOuterType() {
+			return DirectedEdgeWeightedGraph.this;
 		}
 	}
 
@@ -50,26 +86,63 @@ public class DirectedEdgeWeightedGraph {
 		public String toString() {
 			return String.format("[%s \u2192 %s: %d]", this.vertex1, this.vertex2, this.weight);
 		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + getOuterType().hashCode();
+			result = prime * result + ((vertex1 == null) ? 0 : vertex1.hashCode());
+			result = prime * result + ((vertex2 == null) ? 0 : vertex2.hashCode());
+			result = prime * result + weight;
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			Edge other = (Edge) obj;
+			if (!getOuterType().equals(other.getOuterType()))
+				return false;
+			if (vertex1 == null) {
+				if (other.vertex1 != null)
+					return false;
+			} else if (!vertex1.equals(other.vertex1))
+				return false;
+			if (vertex2 == null) {
+				if (other.vertex2 != null)
+					return false;
+			} else if (!vertex2.equals(other.vertex2))
+				return false;
+			if (weight != other.weight)
+				return false;
+			return true;
+		}
+
+		private DirectedEdgeWeightedGraph getOuterType() {
+			return DirectedEdgeWeightedGraph.this;
+		}
 	}
 
-	private Map<String, Vertex> vertices;				// Dicionario de vertices, onde a chave e o nome
-	private Map<Vertex, LinkedList<Edge>> adjList;		// Lista de adjacencias de cada vertice. As adjacencias sao arestas
-	private Map<String, Vertex> firstVertex;			// Vertice inicial. Inicialmente, recebe todas os vertices. Quando as arestas sao adicionadas, os vertices que sao pontos de destino sao removidos.
-	private int opAddVertexCount; 						// Contagem de operacoes de adicionar vertice
-	private int opAddEdgeCount; 						// Contagem de operacoes de adicionar aresta
-	private int opCalculateCostCount;					// Contagem de operacoes de calculo de custo total
+	private MyHashTable<String, Vertex> vertices;				// Dicionario de vertices, onde a chave é o nome
+	private MyHashTable<Vertex, LinkedList<Edge>> adjList;		// Lista de arestas iniciadas por cada vértice
+	private MyHashTable<String, Vertex> initialVertex;			// Vertice inicial. Inicialmente, recebe todas os vértices. Quando as arestas sao adicionadas, os vertices que são pontos de destino são removidos
+	private int opCalculateCostCount;							// Contagem de operações de cálculo de custo total
 
 	/**
 	 * Inicializa um grafo com o tamanho especificado.
 	 * @param size Quantidade de vertices
 	 */
 	public DirectedEdgeWeightedGraph(int size) {
-		vertices = new HashMap<>();
-		adjList = new HashMap<>();
-		firstVertex = new HashMap<>();
+		vertices = new MyHashTable<>(size);
+		adjList = new MyHashTable<>(size);
+		initialVertex = new MyHashTable<>(size);
 
-		opAddEdgeCount = 0;
-		opAddVertexCount = 0;
 		opCalculateCostCount = 0;
 	}
 
@@ -101,15 +174,13 @@ public class DirectedEdgeWeightedGraph {
 		Edge e = new Edge(v1, v2, weight);
 		adjList.putIfAbsent(v1, new LinkedList<>());
 		adjList.get(v1).add(e);
-		firstVertex.remove(v2.name);
-
-		opAddEdgeCount += 2;
+		initialVertex.remove(v2.name);
 	}
 
 	/**
-	 * Adiciona um novo vertice.
-	 * @param name Nome do vertice
-	 * @param cost Custo de vertice
+	 * Adiciona um novo vértice.
+	 * @param name Nome do vértice
+	 * @param cost Custo de vértice
 	 */
 	public void addVertex(String name, int cost) {
 		addVertex(new Vertex(name, cost));
@@ -121,14 +192,13 @@ public class DirectedEdgeWeightedGraph {
 	 */
 	private void addVertex(Vertex element) {
 		vertices.put(element.name, element);
-		firstVertex.put(element.name, element);
-		opAddVertexCount += 2;
+		initialVertex.put(element.name, element);
 	}
 
 	/**
-	 * Calcula o custo total do vertice especificado. O custo e realizado multiplicando o peso da aresta pelo custo
-	 * total do vertice adjacente (que por sua vez faz a mesma operacao com os adjacentes dele, recursivamente), e adicionando ao custo do vertice.
-	 * @param v Vertice
+	 * Calcula o custo total do vértice especificado. O custo é realizado multiplicando o peso da aresta pelo custo
+	 * total do vértice adjacente (que por sua vez faz a mesma operação com os adjacentes dele, recursivamente), e por fim adicionando ao custo do vértice.
+	 * @param v Vértice
 	 * @return Custo total
 	 */
 	private BigInteger getTotalCost(Vertex v) {
@@ -150,18 +220,18 @@ public class DirectedEdgeWeightedGraph {
 	}
 
 	/**
-	 * Calcula o custo total do grafo, a partir do vertice inicial. O calculo somente e realizado se houver apenas um vertice inicial.
+	 * Calcula o custo total do grafo, a partir do vértice inicial. O cálculo somente e realizado se houver apenas um vértice inicial.
 	 * @return Custo total
 	 */
 	public BigInteger getTotalCost() {
-		if(firstVertex.size() > 1)
+		if(initialVertex.size() > 1)
 			throw new IllegalArgumentException("Há mais de um vértice inicial!");
 		
-		return getTotalCost((Vertex) firstVertex.values().toArray()[0]);
+		return getTotalCost((Vertex) initialVertex.values().toArray()[0]);
 	}
 
 	/**
-	 * Detecta se ha algum ciclo no grafo.
+	 * Detecta ciclos no grafo.
 	 * @return
 	 */
 	public boolean containsCycle() {
@@ -176,8 +246,8 @@ public class DirectedEdgeWeightedGraph {
 	}
 
 	/**
-	 * Visita um vertice. Utilizado pelo metodo containsCycle().
-	 * @param v Vertice
+	 * Visita um vértice. Utilizado pelo método containsCycle().
+	 * @param v Vértice
 	 * @return
 	 */
 	private boolean visit(Vertex v) {
@@ -192,19 +262,19 @@ public class DirectedEdgeWeightedGraph {
 
 	/**
 	 * Retorna a quantidade de operacoes.
-	 * @return Vetor onde a posicoes correspondem a:<br>
-	 * 0 - Operaçoes de adicionar vertice
-	 * 1 - Operacoes de adicionar aresta
-	 * 2 - Operacoes de calcular custo total
+	 * @return Vetor onde a posições correspondem a:<br>
+	 * 0 - Operações de adicionar vértice
+	 * 1 - Operacões de adicionar aresta
+	 * 2 - Operacões de calcular custo total
 	 */
 	public int[] getOpCount() {
-		return new int[] {opAddVertexCount, opAddEdgeCount, opCalculateCostCount};
+		return new int[] {vertices.getOpCount(), adjList.getOpCount(), opCalculateCostCount};
 	}
 
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("First: ").append(firstVertex.values()).append(System.lineSeparator());
+		sb.append("First: ").append(initialVertex.values()).append(System.lineSeparator());
 		for(Vertex v : adjList.keySet()) {
 			sb.append(v).append(": ");
 			for(Edge e : adjList.get(v)) {
@@ -217,7 +287,7 @@ public class DirectedEdgeWeightedGraph {
 	}
 
 	/**
-	 * Retorna uma representaçao do grafo no formato suportado pelo GraphViz (linguagem DOT).
+	 * Retorna uma representação do grafo no formato suportado pelo GraphViz (linguagem DOT).
 	 * @return
 	 */
 	public String toGraphViz() {
@@ -226,9 +296,10 @@ public class DirectedEdgeWeightedGraph {
 		for(Vertex v : adjList.keySet()) {
 			for(Edge e : adjList.get(v)) {
 				sb.append("    \"")
-				.append(v).append("\"")
-				.append(" -> \"")
-				.append(e.vertex2).append("\"")
+				.append(v)
+				.append("\" -> \"")
+				.append(e.vertex2)
+				.append("\"")
 				.append(System.lineSeparator());
 			}
 		}

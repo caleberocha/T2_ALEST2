@@ -58,7 +58,7 @@ public class App {
 			System.out.println("Custo total: " + graph.getTotalCost());
 			long endTime = System.nanoTime();
 			System.out.println("Tempo:       " + formatElapsedTime(endTime - startTime));
-			System.out.println("Numero de operaçoes");
+			System.out.println("Numero de operações");
 			int[] op = graph.getOpCount();
 			System.out.println("AddVertex:   " + op[0]);
 			System.out.println("AddEdge:     " + op[1]);
